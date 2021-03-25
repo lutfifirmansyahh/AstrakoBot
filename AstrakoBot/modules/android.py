@@ -2,227 +2,207 @@
 # Inspired from RaphaelGang's android.py
 # By DAvinash97
 
-import time
+from time import sleep
 from bs4 import BeautifulSoup
 from requests import get
-from telegram import Bot, Update, ParseMode
-from telegram.ext import Updater, CommandHandler
+from telegram import Bot, Update, ParseMode, InlineKeyboardMarkup, InlineKeyboardButton
+from telegram.ext import Updater, CommandHandler, MessageHandler
 from telegram.ext import CallbackContext, run_async
 from ujson import loads
 from yaml import load, Loader
 from AstrakoBot import dispatcher
 from AstrakoBot.modules.github import getphh
-
-
-def delete(msg, delmsg, timer):
-    sleep(timer)
-    try:
-        msg.delete()
-        delmsg.delete()
-    except:
-        return
+from AstrakoBot.modules.helper_funcs.misc import delete
 
 
 def magisk(update: Update, context: CallbackContext):
+    message = update.effective_message
     link = "https://raw.githubusercontent.com/topjohnwu/magisk_files/"
-    bot = context.bot
     magisk_dict = {
         "*Stable*": "master/stable.json",
         "\n" "*Canary*": "canary/canary.json",
     }.items()
-    releases = "*Latest Magisk Releases:*\n\n"
+    msg = "*Latest Magisk Releases:*\n\n"
     for magisk_type, release_url in magisk_dict:
         if "Canary" in magisk_type:
             canary = "https://github.com/topjohnwu/magisk_files/raw/canary/"
         else:
             canary = ""
         data = get(link + release_url).json()
-        releases += (
+        msg += (
             f"{magisk_type}:\n"
             f'• Manager - [{data["app"]["version"]} ({data["app"]["versionCode"]})]({canary + data["app"]["link"]}) \n'
             f'• Uninstaller - [Uninstaller {data["magisk"]["version"]} ({data["magisk"]["versionCode"]})]({canary + data["uninstaller"]["link"]}) \n'
         )
-    bot.send_message(
-        chat_id=update.effective_chat.id,
-        text=releases,
+
+    delmsg = message.reply_text(
+        text=msg,
         parse_mode=ParseMode.MARKDOWN,
         disable_web_page_preview=True,
     )
 
+    context.dispatcher.run_async(delete, delmsg, 60)
+
 
 def checkfw(update: Update, context: CallbackContext):
-    bot = context.bot
     args = context.args
-    if not len(args) == 2:
-        reply = f'Give me something to fetch, like:\n`/checkfw SM-N975F DBT`'
-        del_msg = update.effective_message.reply_text(
-            "{}".format(reply),
-            parse_mode=ParseMode.MARKDOWN,
-            disable_web_page_preview=True)
-        time.sleep(5)
-        try:
-            del_msg.delete()
-            update.effective_message.delete()
-            return
-        except BadRequest as err:
-            if (err.message == "Message to delete not found") or (
-                    err.message == "Message can't be deleted"):
-                return
-    temp, csc = args
-    model = f'sm-' + temp if not temp.upper().startswith('SM-') else temp
-    fota = get(
-        f'http://fota-cloud-dn.ospserver.net/firmware/{csc.upper()}/{model.upper()}/version.xml'
-    )
-    if fota.status_code != 200:
-        reply = f"Couldn't check for {temp.upper()} and {csc.upper()}, please refine your search or try again later!"
-        del_msg = update.effective_message.reply_text(
-            "{}".format(reply),
-            parse_mode=ParseMode.MARKDOWN,
-            disable_web_page_preview=True)
-        time.sleep(5)
-        try:
-            del_msg.delete()
-            update.effective_message.delete()
-        except BadRequest as err:
-            if (err.message == "Message to delete not found") or (
-                    err.message == "Message can't be deleted"):
-                return
-    page = BeautifulSoup(fota.content, 'lxml')
-    os = page.find("latest").get("o")
-    if page.find("latest").text.strip():
-        reply = f'*Latest released firmware for {model.upper()} and {csc.upper()} is:*\n'
-        pda, csc, phone = page.find("latest").text.strip().split('/')
-        reply += f'• PDA: `{pda}`\n• CSC: `{csc}`\n'
-        if phone:
-            reply += f'• Phone: `{phone}`\n'
-        if os:
-            reply += f'• Android: `{os}`\n'
-        reply += f''
+    message = update.effective_message
+    
+    if len(args) == 2:
+        temp, csc = args
+        model = f'sm-' + temp if not temp.upper().startswith('SM-') else temp
+        fota = get(
+            f'http://fota-cloud-dn.ospserver.net/firmware/{csc.upper()}/{model.upper()}/version.xml'
+        )
+
+        if fota.status_code != 200:
+            msg = f"Couldn't check for {temp.upper()} and {csc.upper()}, please refine your search or try again later!"
+
+        else:
+            page = BeautifulSoup(fota.content, 'lxml')
+            os = page.find("latest").get("o")
+
+            if page.find("latest").text.strip():
+                msg = f'*Latest released firmware for {model.upper()} and {csc.upper()} is:*\n'
+                pda, csc, phone = page.find("latest").text.strip().split('/')
+                msg += f'• PDA: `{pda}`\n• CSC: `{csc}`\n'
+                if phone:
+                    msg += f'• Phone: `{phone}`\n'
+                if os:
+                    msg += f'• Android: `{os}`\n'
+                msg += f''
+            else:
+                msg = f'*No public release found for {model.upper()} and {csc.upper()}.*\n\n'
+
     else:
-        reply = f'*No public release found for {model.upper()} and {csc.upper()}.*\n\n'
-    update.message.reply_text("{}".format(reply),
-                              parse_mode=ParseMode.MARKDOWN,
-                              disable_web_page_preview=True)
+        msg = f'Give me something to fetch, like:\n`/checkfw SM-N975F DBT`'
+
+    delmsg = message.reply_text(
+        text=msg,
+        parse_mode=ParseMode.MARKDOWN,
+        disable_web_page_preview=True,
+    )
+
+    context.dispatcher.run_async(delete, delmsg, 60)
 
 
 def getfw(update: Update, context: CallbackContext):
-    bot = context.bot
     args = context.args
-    if not len(args) == 2:
-        reply = f'Give me something to fetch, like:\n`/getfw SM-N975F DBT`'
-        del_msg = update.effective_message.reply_text(
-            "{}".format(reply),
-            parse_mode=ParseMode.MARKDOWN,
-            disable_web_page_preview=True)
-        time.sleep(5)
-        try:
-            del_msg.delete()
-            update.effective_message.delete()
-            return
-        except BadRequest as err:
-            if (err.message == "Message to delete not found") or (
-                    err.message == "Message can't be deleted"):
-                return
-    temp, csc = args
-    model = f'sm-' + temp if not temp.upper().startswith('SM-') else temp
-    test = get(
-        f'http://fota-cloud-dn.ospserver.net/firmware/{csc.upper()}/{model.upper()}/version.test.xml'
+    message = update.effective_message
+    
+    if len(args) == 2:
+        temp, csc = args
+        model = f'sm-' + temp if not temp.upper().startswith('SM-') else temp
+        fota = get(
+            f'http://fota-cloud-dn.ospserver.net/firmware/{csc.upper()}/{model.upper()}/version.xml'
+        )
+
+        if fota.status_code != 200:
+            msg = f"Couldn't check for {temp.upper()} and {csc.upper()}, please refine your search or try again later!"
+
+        else:
+            url1 = f'https://samfrew.com/model/{model.upper()}/region/{csc.upper()}/'
+            url2 = f'https://www.sammobile.com/samsung/firmware/{model.upper()}/{csc.upper()}/'
+            url3 = f'https://sfirmware.com/samsung-{model.lower()}/#tab=firmwares'
+            url4 = f'https://samfw.com/firmware/{model.upper()}/{csc.upper()}/'
+            fota = get(
+                f'http://fota-cloud-dn.ospserver.net/firmware/{csc.upper()}/{model.upper()}/version.xml'
+            )
+            page = BeautifulSoup(fota.content, 'lxml')
+            os = page.find("latest").get("o")
+            msg = ""
+            if page.find("latest").text.strip():
+                pda, csc2, phone = page.find("latest").text.strip().split('/')
+                msg += f'*Latest firmware for {model.upper()} and {csc.upper()} is:*\n'
+                msg += f'• PDA: `{pda}`\n• CSC: `{csc2}`\n'
+                if phone:
+                    msg += f'• Phone: `{phone}`\n'
+                if os:
+                    msg += f'• Android: `{os}`\n'
+            msg += f'\n'
+            msg += f'*Downloads for {model.upper()} and {csc.upper()}*\n'
+            msg += f'• [samfrew.com]({url1})\n'
+            msg += f'• [sammobile.com]({url2})\n'
+            msg += f'• [sfirmware.com]({url3})\n'
+            msg += f'• [samfw.com]({url4})\n'
+    else:
+        msg = f'Give me something to fetch, like:\n`/getfw SM-N975F DBT`'
+
+    delmsg = message.reply_text(
+        text=msg,
+        parse_mode=ParseMode.MARKDOWN,
+        disable_web_page_preview=True,
     )
-    if test.status_code != 200:
-        reply = f"Couldn't find any firmware downloads for {temp.upper()} and {csc.upper()}, please refine your search or try again later!"
-        del_msg = update.effective_message.reply_text(
-            "{}".format(reply),
-            parse_mode=ParseMode.MARKDOWN,
-            disable_web_page_preview=True)
-        time.sleep(5)
-        try:
-            del_msg.delete()
-            update.effective_message.delete()
-        except BadRequest as err:
-            if (err.message == "Message to delete not found") or (
-                    err.message == "Message can't be deleted"):
-                return
-    url1 = f'https://samfrew.com/model/{model.upper()}/region/{csc.upper()}/'
-    url2 = f'https://www.sammobile.com/samsung/firmware/{model.upper()}/{csc.upper()}/'
-    url3 = f'https://sfirmware.com/samsung-{model.lower()}/#tab=firmwares'
-    url4 = f'https://samfw.com/firmware/{model.upper()}/{csc.upper()}/'
-    fota = get(
-        f'http://fota-cloud-dn.ospserver.net/firmware/{csc.upper()}/{model.upper()}/version.xml'
-    )
-    page = BeautifulSoup(fota.content, 'lxml')
-    os = page.find("latest").get("o")
-    reply = ""
-    if page.find("latest").text.strip():
-        pda, csc2, phone = page.find("latest").text.strip().split('/')
-        reply += f'*Latest firmware for {model.upper()} and {csc.upper()} is:*\n'
-        reply += f'• PDA: `{pda}`\n• CSC: `{csc2}`\n'
-        if phone:
-            reply += f'• Phone: `{phone}`\n'
-        if os:
-            reply += f'• Android: `{os}`\n'
-    reply += f'\n'
-    reply += f'*Downloads for {model.upper()} and {csc.upper()}*\n'
-    reply += f'• [samfrew.com]({url1})\n'
-    reply += f'• [sammobile.com]({url2})\n'
-    reply += f'• [sfirmware.com]({url3})\n'
-    reply += f'• [samfw.com]({url4})\n'
-    update.message.reply_text("{}".format(reply),
-                              parse_mode=ParseMode.MARKDOWN,
-                              disable_web_page_preview=True)
+
+    context.dispatcher.run_async(delete, delmsg, 60)
 
 
 def phh(update: Update, context: CallbackContext):
-    bot = context.bot
     args = context.args
+    message = update.effective_message
     index = int(args[0]) if len(args) > 0 and args[0].isdigit() else 0
     text = getphh(index)
-    update.effective_message.reply_text(text, parse_mode=ParseMode.HTML, disable_web_page_preview=True)
-    return
+
+    delmsg = message.reply_text(
+        text,
+        parse_mode=ParseMode.HTML,
+        disable_web_page_preview=True,
+    )
+
+    context.dispatcher.run_async(delete, delmsg, 60)
 
 
 def miui(update: Update, context: CallbackContext):
-    args = context.args
-    msg = update.effective_message
+    message = update.effective_message
 
-    URL = "https://raw.githubusercontent.com/XiaomiFirmwareUpdater/miui-updates-tracker/master/data/latest.yml"
-    codename = args[0] if len(args) > 0 else False
+    device = message.text[len("/miui ") :]
 
-    if not codename:
-        delmsg = msg.reply_text("Provide a codename bruh!")
-        delete(msg, delmsg, 5)
-        return
+    if device:
+        link = "https://raw.githubusercontent.com/XiaomiFirmwareUpdater/miui-updates-tracker/master/data/latest.yml"
+        yaml_data = load(get(link).content, Loader=Loader)
+        data = [i for i in yaml_data if device in i['codename']]
 
-    yaml_data = load(get(URL).content, Loader=Loader)
-    data = [ i for i in yaml_data if codename in i['codename'] ]
+        if not data:
+            msg = f"Miui is not avaliable for {device}"
+        else:
+            markup = []
+            for fw in data:
+                av = fw['android']
+                branch = fw['branch']
+                method = fw['method']
+                link = fw['link']
+                fname = fw['name']
+                version = fw['version']
 
-    if len(data) < 1:
-        delmsg = msg.reply_text("Provide a valid codename bruh!")
-        delete(msg, delmsg, 5)
-        return
 
-    markup = []
-    for fw in data:
-        av = fw['android']
-        branch = fw['branch']
-        method = fw['method']
-        link = fw['link']
-        fname = fw['name']
-        version = fw['version']
+                btn = fname + ' | ' + branch + ' | ' + method + ' | ' + version
+                markup.append([InlineKeyboardButton(text=btn, url=link)])
 
-        btn = fname + ' | ' + branch + ' | ' + method + ' | ' + version
-        markup.append([InlineKeyboardButton(text=btn, url=link)])
+            device = fname.split(" ")
+            device.pop()
+            device = " ".join(device)
+            delmsg = message.reply_text(f"The latest firmwares for the *{device}* are:",
+                                    reply_markup=InlineKeyboardMarkup(markup),
+                                    parse_mode=ParseMode.MARKDOWN)
 
-    device = fname.split(" ")
-    device.pop()
-    device = " ".join(device)
-    delmsg = msg.reply_text(f"The latest firmwares for *{device}* are:",
-                            reply_markup=InlineKeyboardMarkup(markup),
-                            parse_mode=ParseMode.MARKDOWN)
-    delete(msg, delmsg, 60)
+            context.dispatcher.run_async(delete, delmsg, 60)
+
+            return
+
+    else:
+        msg = f'provide some Xiaomi device codename, like:\n`/miui whyred`'
+
+    delmsg = message.reply_text(
+        text=msg,
+        parse_mode=ParseMode.MARKDOWN,
+        disable_web_page_preview=True,
+    )
+
+    context.dispatcher.run_async(delete, delmsg, 60)
+
 
 
 def orangefox(update: Update, context: CallbackContext):
-    bot, args = context.bot, context.args
     message = update.effective_message
     device = message.text[len("/orangefox ") :]
 
@@ -230,7 +210,7 @@ def orangefox(update: Update, context: CallbackContext):
         link = get(f"https://api.orangefox.download/v3/releases/?codename={device}&sort=date_desc&limit=1")
 
         if link.status_code == 404:
-            message = f"OrangeFox currently is not avaliable for {device}"
+            msg = f"OrangeFox recovery is not avaliable for {device}"
         else:
             page = loads(link.content)
             file_id = page["data"][0]["_id"]
@@ -249,34 +229,34 @@ def orangefox(update: Update, context: CallbackContext):
             dl_link = page["mirrors"]["DL"]
             date = page["date"]
             md5 = page["md5"]
-            message = f"<b>Latest OrangeFox Recovery for the {full_name}</b>\n\n"
-            message += f"• Manufacturer: {oem}\n"
-            message += f"• Model: {model}\n"
-            message += f"• Codename: {device}\n"
-            message += f"• Release type: official\n"
-            message += f"• Build type: {build_type}\n"
-            message += f"• Version: {version}\n"
-            message += f"• Changelog: {changelog}\n"
-            message += f"• Size: {size}\n"
-            message += f"• Date: {date}\n"
-            message += f"• File: {dl_file}\n"
-            message += f"• MD5: {md5}\n\n"
-            message += f"• <b>Download:</b> {dl_link}\n"        
+            msg = f"<b>Latest OrangeFox Recovery for the {full_name}</b>\n\n"
+            msg += f"• Manufacturer: {oem}\n"
+            msg += f"• Model: {model}\n"
+            msg += f"• Codename: {device}\n"
+            msg += f"• Release type: official\n"
+            msg += f"• Build type: {build_type}\n"
+            msg += f"• Version: {version}\n"
+            msg += f"• Changelog: {changelog}\n"
+            msg += f"• Size: {size}\n"
+            msg += f"• Date: {date}\n"
+            msg += f"• File: {dl_file}\n"
+            msg += f"• MD5: {md5}\n\n"
+            msg += f"• <b>Download:</b> {dl_link}\n"        
 
     else:
-        message = "Please specify a device codename"
+        msg = "Please specify a device codename"
 
 
-    bot.send_message(
-        chat_id=update.effective_chat.id,
-        text=message,
+    delmsg = message.reply_text(
+        text=msg,
         parse_mode=ParseMode.HTML,
         disable_web_page_preview=True,
     )
 
+    context.dispatcher.run_async(delete, delmsg, 60)
+
 
 def twrp(update: Update, context: CallbackContext):
-    bot, args = context.bot, context.args
     message = update.effective_message
     device = message.text[len("/twrp ") :]
 
@@ -284,7 +264,7 @@ def twrp(update: Update, context: CallbackContext):
         link = get(f"https://eu.dl.twrp.me/{device}")
 
         if link.status_code == 404:
-            message = f"TWRP currently is not avaliable for {device}"
+            msg = f"TWRP is not avaliable for {device}"
         else:
             page = BeautifulSoup(link.content, "lxml")
             download = page.find("table").find("tr").find("a")
@@ -292,22 +272,23 @@ def twrp(update: Update, context: CallbackContext):
             dl_file = download.text
             size = page.find("span", {"class": "filesize"}).text
             date = page.find("em").text.strip()
-            message = f"<b>Latest TWRP for the {device}</b>\n\n"
-            message += f"• Release type: official\n"
-            message += f"• Size: {size}\n"
-            message += f"• Date: {date}\n"
-            message += f"• File: {dl_file}\n\n"
-            message += f"• <b>Download:</b> {dl_link}\n"
+            msg = f"<b>Latest TWRP for the {device}</b>\n\n"
+            msg += f"• Release type: official\n"
+            msg += f"• Size: {size}\n"
+            msg += f"• Date: {date}\n"
+            msg += f"• File: {dl_file}\n\n"
+            msg += f"• <b>Download:</b> {dl_link}\n"
     else:
-        message = "Please specify a device codename"
+        msg = "Please specify a device codename"
 
 
-    bot.send_message(
-        chat_id=update.effective_chat.id,
-        text=message,
+    delmsg = message.reply_text(
+        text=msg,
         parse_mode=ParseMode.HTML,
         disable_web_page_preview=True,
     )
+
+    context.dispatcher.run_async(delete, delmsg, 60)
 
 
 __help__ = """
@@ -326,17 +307,19 @@ __help__ = """
 • `/checkfw <model> <csc>` - Samsung only - shows the latest firmware info for the given device, taken from samsung servers
 • `/getfw <model> <csc>` - Samsung only - gets firmware download links from samfrew, sammobile and sfirmwares for the given device
 """
-magisk_handler = CommandHandler(["magisk", "root", "su"], magisk, run_async=True)
-orangefox_handler = CommandHandler("orangefox", orangefox, run_async=True)
-twrp_handler = CommandHandler("twrp", twrp, run_async=True)
+
+MAGISK_HANDLER = CommandHandler(["magisk", "root", "su"], magisk, run_async=True)
+ORANGEFOX_HANDLER = CommandHandler("orangefox", orangefox, run_async=True)
+TWRP_HANDLER = CommandHandler("twrp", twrp, run_async=True)
 GETFW_HANDLER = CommandHandler("getfw", getfw, run_async=True)
 CHECKFW_HANDLER = CommandHandler("checkfw", checkfw, run_async=True)
 PHH_HANDLER = CommandHandler("phh", phh, run_async=True)
 MIUI_HANDLER = CommandHandler("miui", miui, run_async=True)
 
-dispatcher.add_handler(magisk_handler)
-dispatcher.add_handler(orangefox_handler)
-dispatcher.add_handler(twrp_handler)
+
+dispatcher.add_handler(MAGISK_HANDLER)
+dispatcher.add_handler(ORANGEFOX_HANDLER)
+dispatcher.add_handler(TWRP_HANDLER)
 dispatcher.add_handler(GETFW_HANDLER)
 dispatcher.add_handler(CHECKFW_HANDLER)
 dispatcher.add_handler(PHH_HANDLER)
@@ -344,4 +327,4 @@ dispatcher.add_handler(MIUI_HANDLER)
 
 __mod_name__ = "Android"
 __command_list__ = ["magisk", "root", "su", "orangefox", "twrp", "checkfw", "getfw", "phh", "miui"]
-__handlers__ = [magisk_handler, orangefox_handler, twrp_handler, GETFW_HANDLER, CHECKFW_HANDLER, PHH_HANDLER, MIUI_HANDLER]
+__handlers__ = [MAGISK_HANDLER, ORANGEFOX_HANDLER, TWRP_HANDLER, GETFW_HANDLER, CHECKFW_HANDLER, PHH_HANDLER, MIUI_HANDLER]
