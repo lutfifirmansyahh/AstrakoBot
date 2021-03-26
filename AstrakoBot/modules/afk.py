@@ -61,7 +61,7 @@ def no_longer_afk(update: Update, context: CallbackContext):
                 "*{}* HADIR UNTUK MEMBERANTAS PARA JAMETERS!",
                 "Ajg ajg si *{}* abis nyari pap tt!",
                 "*{}* welkam back pengangguran!",
-                "*{}* si beban keluarga bsru dateng!",
+                "*{}* si beban keluarga baru dateng!",
                 "Welcome back Pepek! {}",
                 "Dimana si Pepek {}?\nAjg ajg disini!",
             ]
