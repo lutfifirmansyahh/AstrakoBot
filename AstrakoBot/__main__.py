@@ -73,13 +73,6 @@ def get_readable_time(seconds: int) -> str:
 
 
 PM_START_TEXT = """
-Hi {}, my name is {}! 
-I am a modular group management bot.
-
-You can find my list of available commands with /help.
-"""
-
-HELP_STRINGS = """
 Hey Pepek People! Nama gw *{}*.
 Gw adalah manusia robot super,
 yang dibuat untuk membasmi para SANGEAWAN & SANGEAWATI di grup yang suka minta pc ama vcs.
@@ -88,9 +81,10 @@ MEMBASMI SEMUA USER USER TELE YANG TOLOL JUGA YANG KELAKUANNYA KEK BABI.
 ×**Managed with by:** [Master](https://t.me/yangtagtolol)
 ×**Maintened with by:** [WHO AM I](https://t.me/yangtagtolol)
 ━─━─━─━─━─━─━─━─━─━─━
-Add gw ke grup untuk membasmi mereka, klik /help untuk lihat daftar fitur gw.
+Add gw ke grup untuk membasmi mereka,klik /help untuk lihat daftar fitur gw..
+"""
 
-*Main* commands available:
+HELP_STRINGS = """
 Hai pek! Nama gw adalah *{}*.
 Gw adalah manusia robot dengan beberapa kelebihan yang menyenangkan! Silahkan lihat berikut ini untuk beberapa ide dari \
 hal-hal yang bisa saya bantu.
