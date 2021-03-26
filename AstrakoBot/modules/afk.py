@@ -15,7 +15,9 @@ AFK_GROUP = 7
 AFK_REPLY_GROUP = 8
 
 
-@run_async
+"""This Function to triger bot"""
+
+
 def afk(update: Update, context: CallbackContext):
     args = update.effective_message.text.split(None, 1)
     user = update.effective_user
@@ -43,7 +45,7 @@ def afk(update: Update, context: CallbackContext):
         pass
 
 
-@run_async
+"""This Function to triger bot"""
 def no_longer_afk(update: Update, context: CallbackContext):
     user = update.effective_user
     message = update.effective_message
@@ -73,7 +75,7 @@ def no_longer_afk(update: Update, context: CallbackContext):
             return
 
 
-@run_async
+"""This method to tell if user afk"""
 def reply_afk(update: Update, context: CallbackContext):
     bot = context.bot
     message = update.effective_message
