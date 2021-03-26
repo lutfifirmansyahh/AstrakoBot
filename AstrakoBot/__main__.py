@@ -80,25 +80,36 @@ You can find my list of available commands with /help.
 """
 
 HELP_STRINGS = """
-Hey there! My name is *{}*.
-I'm a modular group management bot and help admins to manage their groups. Have a look at the following for an idea of some of \
-the things I can help you with.
+Hey Pepek People! Nama gw *{}*.
+Gw adalah manusia robot super,
+yang dibuat untuk membasmi para SANGEAWAN & SANGEAWATI di grup yang suka minta pc ama vcs.
+MEMBASMI SEMUA USER USER TELE YANG TOLOL JUGA YANG KELAKUANNYA KEK BABI.
+━─━─━─━─━─━─━─━─━─━─━
+×**Managed with by:** [Master](https://t.me/yangtagtolol)
+×**Maintened with by:** [WHO AM I](https://t.me/yangtagtolol)
+━─━─━─━─━─━─━─━─━─━─━
+Add gw ke grup untuk membasmi mereka, klik /help untuk lihat daftar fitur gw.
 
 *Main* commands available:
- • /help: PM's you this message.
- • /help <module name>: PM's you info about that module.
- • /donate: information on how to donate!
- • /settings:
-   • in PM: will send you your settings for all supported modules.
-   • in a group: will redirect you to pm, with all that chat's settings.
+Hai pek! Nama gw adalah *{}*.
+Gw adalah manusia robot dengan beberapa kelebihan yang menyenangkan! Silahkan lihat berikut ini untuk beberapa ide dari \
+hal-hal yang bisa saya bantu.
+*Perintah utama* yang tersedia:
+ - /start: mulai bot
+ - /help: PM Anda dengan pesan ini.
+ - /help <module name>: PM Anda dengan info tentang modul itu.
+ - /donate: informasi tentang cara menyumbang!
+ - /settings:
+   - di PM: akan mengirimkan pengaturan Anda untuk semua modul yang didukung.
+   - di grup: akan mengarahkan Anda ke pm, dengan semua pengaturan obrolan itu.
 {}
-And the following:
+Dan berikut ini:
 """.format(
     dispatcher.bot.first_name,
     "" if not ALLOW_EXCL else "\nAll commands can either be used with / or !.\n",
 )
 
-ASTRAKOBOT_IMG = "https://i.imgur.com/1oah5E2.jpg"
+ASTRAKOBOT_IMG = "https://telegra.ph/file/9ba9d0138feb52dd5f628.jpg"
 
 DONATE_STRING = """Heya, glad to hear you want to donate!
 AstrakoBot is hosted on its own server and doesn't require any donations as of now but \
@@ -217,7 +228,7 @@ def start(update: Update, context: CallbackContext):
                     [
                         [
                             InlineKeyboardButton(
-                                text="Add AstrakoBot to your group",
+                                text="Add Gw ke group",
                                 url="t.me/{}?startgroup=true".format(
                                     context.bot.username
                                 ),
@@ -225,20 +236,20 @@ def start(update: Update, context: CallbackContext):
                         ],
                         [
                             InlineKeyboardButton(
-                                text="Support Group",
+                                text="Jan di klik",
                                 url=f"https://t.me/AstrakoBotSupport",
                             ),
                         ],
                         [
                             InlineKeyboardButton(
-                                text="Getting started guide",
+                                text="Owner gantenk",
                                 url="https://t.me/OnePunchUpdates/29",
                             )
                         ],
                         [
                             InlineKeyboardButton(
-                                text="Source code",
-                                url="https://github.com/Astrako/AstrakoBot",
+                                text="GROUP CHAT ASIK",
+                                url="https://t.me/etherealreborn",
                             )
                         ],
                     ]
